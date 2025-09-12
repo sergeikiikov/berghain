@@ -1,25 +1,20 @@
 import os
 import json
-from ai_ceo.src.agent import create_ceo_prompt
-# In a real scenario, you would use the openai library.
-# For this example, we will mock the LLM response.
-# from openai import OpenAI
-# from dotenv import load_dotenv
 
+# Updated imports for the new project structure
+from src.ceo.agent import create_ceo_prompt
+from src.orchestrator.main import Orchestrator
+
+# For now, we will continue to mock the LLM response.
 def get_llm_response(prompt: str) -> str:
     """
     Simulates a call to an LLM.
-
-    In a real implementation, this function would use the OpenAI client
-    to send the prompt and receive a response. For now, it returns a
-    hardcoded JSON string that mimics the expected output for the task
-    "Add a blog to our company website."
+    Returns a hardcoded JSON string that mimics the expected output.
     """
-    print("--- PROMPT SENT TO MOCK LLM ---")
-    print(prompt)
-    print("---------------------------------")
+    print("--- [CEO] PROMPT SENT TO MOCK LLM ---")
+    # print(prompt) # The prompt is very long, so we can hide it for cleaner output
+    print("--- [CEO] MOCK RESPONSE RECEIVED ---")
 
-    # This is a mocked response for demonstration purposes.
     mock_response = {
         "plan": [
             {
@@ -58,28 +53,24 @@ def get_llm_response(prompt: str) -> str:
 
 def generate_plan(task: str):
     """
-    Generates a project plan for a given task.
+    Generates a project plan for a given task using the AI CEO.
     """
-    # Step 1: Create the prompt for the AI CEO
     prompt = create_ceo_prompt(task)
-
-    # Step 2: Get the response from the (mock) LLM
     llm_output = get_llm_response(prompt)
 
-    # Step 3: Parse the JSON response
     try:
         plan_data = json.loads(llm_output)
         return plan_data
     except json.JSONDecodeError:
-        print("Error: The LLM output was not valid JSON.")
+        print("Error: The CEO output was not valid JSON.")
         return None
 
 def main_cli():
     """
-    The main command-line interface loop for the AI CEO.
+    The main command-line interface loop for the application.
     """
-    print("--- AI CEO Interface ---")
-    print("Enter a task for the AI CEO to plan. Type 'exit' or 'quit' to end.")
+    print("--- Multi-Agent AI Coding Assistant ---")
+    print("Enter a task for the AI CEO to plan and execute. Type 'exit' or 'quit' to end.")
 
     while True:
         user_task = input("\nYour Task > ")
@@ -90,20 +81,22 @@ def main_cli():
         if not user_task:
             continue
 
-        print(f"\nGenerating plan for task: '{user_task}'...")
-        generated_plan = generate_plan(user_task)
+        # Step 1: Get the plan from the AI CEO
+        print(f"\n[CEO] Generating plan for task: '{user_task}'...")
+        plan_json = generate_plan(user_task)
 
-        if generated_plan and "plan" in generated_plan:
-            print("\n--- GENERATED PROJECT PLAN ---")
-            # Pretty print the plan
-            for task in generated_plan["plan"]:
-                print(f"  Task ID: {task['task_id']}")
-                print(f"    Description: {task['description']}")
-                print(f"    Agent: {task['agent']}")
-                print(f"    Dependencies: {task['dependencies']}")
-                print("-" * 20)
-        else:
-            print("Sorry, I couldn't generate a plan for that task.")
+        if not plan_json or "plan" not in plan_json:
+            print("Sorry, the AI CEO could not generate a plan for that task.")
+            continue
+
+        print("[CEO] Plan generated successfully.")
+
+        # Step 2: Hand the plan to the Orchestrator to execute
+        orchestrator = Orchestrator(plan=plan_json["plan"])
+        orchestrator.execute_plan()
+
+        print("\n--- Task execution complete. Ready for new task. ---")
+
 
 if __name__ == "__main__":
     main_cli()
